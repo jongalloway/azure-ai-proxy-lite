@@ -196,7 +196,7 @@ export const Registration = () => {
       : "unknown";
     const lines: string[] = [];
     lines.push(`# ${safe(eventName)}`);
-    lines.push(`# Lab config generated ${safe(new Date().toISOString())}`);
+    lines.push(`# Event config generated ${safe(new Date().toISOString())}`);
     lines.push(`# API key expires ${safe(expiresIso)}`);
     lines.push("");
     lines.push(`EVENT_API_KEY=${safe(attendee?.apiKey)}`);
@@ -244,7 +244,7 @@ export const Registration = () => {
       .toLowerCase()
       .replace(/[^a-z0-9-]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    const filename = `lab-${safeId || "event"}.env`;
+    const filename = `event-${safeId || "event"}.env`;
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -290,6 +290,19 @@ export const Registration = () => {
   };
 
   const trimmedEventCode = event?.eventCode?.trim();
+
+  const nonFoundryModelNames: string[] = (() => {
+    if (!event?.capabilities) return [];
+    const foundryToolkitNames = new Set(
+      (event.foundryToolkitEndpoints ?? []).map((ep: FoundryToolkitEndpoint) => ep.deploymentName)
+    );
+    return Object.entries(event.capabilities)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .flatMap(([, names]) =>
+        [...names].filter((n) => !foundryToolkitNames.has(n)).sort((a, b) => a.localeCompare(b))
+      );
+  })();
+  const hasNonFoundryModels = nonFoundryModelNames.length > 0;
 
   return (
     <section className={styles.container} >
@@ -360,28 +373,34 @@ export const Registration = () => {
       )}
       {state.profileLoaded && state.profile && attendee && (
         <>
-          <h2>Registration Details</h2>
+          {((event?.foundryToolkitEndpoints && event.foundryToolkitEndpoints.length > 0) ||
+            (event?.mcpServerEndpoints && event.mcpServerEndpoints.length > 0) ||
+            hasNonFoundryModels) && (
+            <h2>Registration Details</h2>
+          )}
           <div className={styles.detailsSection}>
-          <div className={styles.toolkitCard}>
-            <span className={styles.toolkitLabel}>Event API Key:</span>
-            <span className={styles.toolkitValue}>
-              {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
-            </span>
-            <div className={styles.fieldRow}>
-              <Button
-                icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
-                onClick={() =>
-                  dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
-                }
-                size="small"
-              />
-              <Button
-                icon={<CopyRegular />}
-                onClick={() => copyToClipboard(attendee.apiKey)}
-                size="small"
-              />
+          {event?.foundryToolkitEndpoints && event.foundryToolkitEndpoints.length > 0 && (
+            <div className={styles.toolkitCard}>
+              <span className={styles.toolkitLabel}>Event API Key:</span>
+              <span className={styles.toolkitValue}>
+                {state.showApiKey ? attendee.apiKey : "••••••••••••••••••••••••••••••••"}
+              </span>
+              <div className={styles.fieldRow}>
+                <Button
+                  icon={state.showApiKey ? <EyeRegular /> : <EyeOffRegular />}
+                  onClick={() =>
+                    dispatch({ type: "TOGGLE_API_KEY_VISIBILITY" })
+                  }
+                  size="small"
+                />
+                <Button
+                  icon={<CopyRegular />}
+                  onClick={() => copyToClipboard(attendee.apiKey)}
+                  size="small"
+                />
+              </div>
             </div>
-          </div>
+          )}
           {event?.foundryToolkitEndpoints && event.foundryToolkitEndpoints.length > 0 && (
             <>
               <h3>Foundry Toolkit Access</h3>
@@ -505,8 +524,10 @@ if __name__ == "__main__":
             </>
           )}
           </div>
+          {hasNonFoundryModels && (
+          <>
           <h3>SDK Access</h3>
-          The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls.
+          The real power of the Azure OpenAI Service is in the SDKs that allow you to integrate AI capabilities into your applications. You'll need your API Key and the proxy Endpoint to access AI resources using an SDK such as the OpenAI SDK or making REST calls. Or click to download your event keys and endpoints.
           <br />
           <br />
           <Button
@@ -514,10 +535,10 @@ if __name__ == "__main__":
             onClick={downloadLabConfig}
             style={{ alignSelf: "flex-start", marginBottom: "12px" }}
           >
-            Download lab config (.env)
+            Download event config (.env)
           </Button>
           <p className={styles.toolkitDescription}>
-            Saves a <code>lab-{(routeEventId ?? event?.id ?? event?.eventCode ?? "event").toString().toLowerCase().replace(/[^a-z0-9-]+/g, "-")}.env</code> file
+            Saves a <code>event-{(routeEventId ?? event?.id ?? event?.eventCode ?? "event").toString().toLowerCase().replace(/[^a-z0-9-]+/g, "-")}.env</code> file
             containing your <code>EVENT_API_KEY</code>, a <code>MODEL_NAME</code> and matching
             {" "}<code>MODEL_NAME_URL</code> entry for each available model, and any MCP server URLs.
           </p>
@@ -555,23 +576,12 @@ if __name__ == "__main__":
               size="small"
             />
           </div>
-          {event?.capabilities && (() => {
-            const foundryToolkitNames = new Set(
-              (event.foundryToolkitEndpoints ?? []).map((ep: FoundryToolkitEndpoint) => ep.deploymentName)
-            );
-            const filtered = Object.entries(event.capabilities)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .flatMap(([, names]) =>
-                [...names].filter((n) => !foundryToolkitNames.has(n)).sort((a, b) => a.localeCompare(b))
-              );
-            if (filtered.length === 0) return null;
-            return (
-              <div className={styles.toolkitCard}>
-                <span className={styles.toolkitLabel}>Available Models:</span>
-                <span className={styles.toolkitEndpointValue}>{filtered.join(", ")}</span>
-              </div>
-            );
-          })()}
+          {event?.capabilities && hasNonFoundryModels && (
+            <div className={styles.toolkitCard}>
+              <span className={styles.toolkitLabel}>Available Models:</span>
+              <span className={styles.toolkitEndpointValue}>{nonFoundryModelNames.join(", ")}</span>
+            </div>
+          )}
           </div>
           <h4>Python example using the OpenAI Python SDK</h4>
           The following Python code demonstrates how to use the OpenAI Python SDK to interact with the Azure OpenAI Service.
@@ -643,6 +653,8 @@ print(completion.model_dump_json(indent=2))`}
               </Link>
             </li>
           </ul>
+          </>
+          )}
           <br />
           {/* </div> */}
         </>
