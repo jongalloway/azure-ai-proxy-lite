@@ -13,7 +13,12 @@ The [VS Code Foundry Toolkit](https://marketplace.visualstudio.com/items?itemNam
 
 1. Install the [Foundry Toolkit extension](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) in VS Code.
 1. Register for an event to obtain your API key and the proxy endpoint URL.
-1. Configure the Foundry Toolkit to connect through the proxy using your credentials.
+1. [Configure the Foundry Toolkit to connect through the proxy using your credentials as follows:](https://youtu.be/_WvFlKoaygM?si=TydHLGgkE3etjz5B)
+    - Go to Foundry Toolkit > **My Resources > Connected Resources > Models.**
+    - In the models option, click **+**
+    - A new menu will pop up, select **Add Custom Model**
+    - Next, add in your model endpoint > model name as in the API > Model display name > api key
+    - Your model will be added successfully & you can test it out in the playground
 
 ## For event organizers
 
