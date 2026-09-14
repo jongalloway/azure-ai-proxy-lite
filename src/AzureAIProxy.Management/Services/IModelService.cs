@@ -10,4 +10,7 @@ public interface IModelService
     Task<OwnerCatalog?> GetOwnerCatalogAsync(Guid catalogId);
     Task UpdateOwnerCatalogAsync(OwnerCatalog ownerCatalog);
     Task DuplicateOwnerCatalogAsync(OwnerCatalog ownerCatalog);
+    Task<ModelConnectionValidation> ValidateOwnerCatalogAsync(Guid catalogId);
 }
+
+public record ModelConnectionValidation(bool IsReachable, string Message);

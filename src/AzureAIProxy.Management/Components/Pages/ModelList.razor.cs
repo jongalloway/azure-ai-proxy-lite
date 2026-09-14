@@ -51,4 +51,10 @@ public partial class ModelList : ComponentBase
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
+    private async Task ValidateOwnerCatalogAsync(OwnerCatalog resource)
+    {
+        var result = await ModelService.ValidateOwnerCatalogAsync(resource.CatalogId);
+        Snackbar.Add($"Validation check: {result.Message}", result.IsReachable ? Severity.Success : Severity.Error);
+    }
 }
