@@ -40,7 +40,8 @@
   "remoteUser": "vscode",
   "remoteEnv": {
     "ENVIRONMENT": "development",
-    "NPM_CONFIG_REGISTRY": "https://packagefeedproxy.microsoft.io/npm/"
+    "NPM_CONFIG_REGISTRY": "https://packagefeedproxy.microsoft.io/npm/",
+    "PIP_INDEX_URL": "https://packagefeedproxy.microsoft.io/pypi/simple/"
   },
   "forwardPorts": [
     4280,
