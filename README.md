@@ -70,7 +70,6 @@ graph LR
 - Encrypted storage for all sensitive configuration (AES encryption)
 - Managed Identity support (eliminate API key storage entirely with RBAC)
 - This update streamlines how the Foundry Agent Service operates by focusing on security and identity management:
-
   - **Managed Identity Integration**: Automatically maps Foundry Agent Service Managed Identity requirements to the Event API Key, ensuring seamless authentication.
 
   - **Object Ownership Isolation**: Enhances privacy by restricting access so attendees can only interact with their own agents, threads, and files.
@@ -138,6 +137,13 @@ In Azure, the proxy and admin app use user-assigned managed identities with RBAC
 - Drop-in compatible with Azure OpenAI SDKs (Python, .NET, LangChain, REST)
 - Attendees just swap their endpoint URL and use their issued API key
 - Registration page shows available models and copy-paste configuration
+- OpenAI-compatible .NET client routes for Responses (`/openai/v1/responses`) and embeddings (`/openai/v1/embeddings`)
+
+### Operations
+
+- Anonymous health check: `GET /healthz`
+- Send `X-Request-ID` with any proxy request to correlate the client response and structured proxy logs
+- Proxy logs include request ID, event ID, model, upstream status, and duration without recording event keys, upstream keys, or request bodies
 
 ## End-to-End Tests
 
