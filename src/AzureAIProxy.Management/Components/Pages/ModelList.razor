@@ -17,6 +17,7 @@
             <MudTh>Friendly Name</MudTh>
             <MudTh>Name</MudTh>
             <MudTh>Type</MudTh>
+            <MudTh>Capabilities</MudTh>
             <MudTh>Region</MudTh>
             <MudTh>Refd</MudTh>
             <MudTh>Active</MudTh>
@@ -28,6 +29,7 @@
             </MudTd>
             <MudTd DataLabel="Name">@context.DeploymentName</MudTd>
             <MudTd DataLabel="Type">@(context.ModelType!.Value.ToString().Replace("_", " "))</MudTd>
+            <MudTd DataLabel="Capabilities">@string.Join(", ", context.Capabilities)</MudTd>
             <MudTd DataLabel="Region">@(context.Location)</MudTd>
             <MudTd DataLabel="Referenced">@(context.Events.Count)</MudTd>
             <MudTd DataLabel="Active">@(context.Active ? "Yes" : "No")</MudTd>
@@ -35,6 +37,8 @@
                 <MudStack Row="true" Spacing="1">
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
                         Href="@($"/models/{context.CatalogId}")" title="Edit" />
+                    <MudIconButton Icon="@Icons.Material.Filled.NetworkCheck" Color="Color.Primary"
+                        @onclick="() => ValidateOwnerCatalogAsync(context)" title="Validate endpoint and credentials" />
                     <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Primary"
                         @onclick="() => DuplicateOwnerCatalogAsync(context)" title="Duplicate" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Primary"

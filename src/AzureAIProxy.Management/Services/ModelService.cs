@@ -1,4 +1,6 @@
 using Azure;
+using Azure.Core;
+using Azure.Identity;
 using AzureAIProxy.Management.Components.ModelManagement;
 using AzureAIProxy.Shared.Database;
 using AzureAIProxy.Shared.Services;
@@ -6,8 +8,10 @@ using AzureAIProxy.Shared.TableStorage;
 
 namespace AzureAIProxy.Management.Services;
 
-public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption, ICacheInvalidationService cacheInvalidation) : IModelService
+public class ModelService(IAuthService authService, ITableStorageService tableStorage, IEncryptionService encryption, ICacheInvalidationService cacheInvalidation, IHttpClientFactory httpClientFactory) : IModelService
 {
+    private static readonly DefaultAzureCredential DefaultCredential = new();
+
     public void Dispose()
     {
         Dispose(true);
@@ -159,6 +163,43 @@ public class ModelService(IAuthService authService, ITableStorageService tableSt
             UseManagedIdentity = entity.UseManagedIdentity,
             UseMaxCompletionTokens = entity.UseMaxCompletionTokens
         };
+    }
+
+    public async Task<ModelConnectionValidation> ValidateOwnerCatalogAsync(Guid catalogId)
+    {
+        var catalog = await GetOwnerCatalogAsync(catalogId);
+        if (catalog is null)
+            return new(false, "Resource not found.");
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, catalog.EndpointUrl);
+            if (catalog.UseManagedIdentity)
+            {
+                var scope = catalog.ModelType == ModelType.Foundry_Agent
+                    ? "https://ai.azure.com/.default"
+                    : "https://cognitiveservices.azure.com/.default";
+                var token = await DefaultCredential.GetTokenAsync(new TokenRequestContext([scope]));
+                request.Headers.Authorization = new("Bearer", token.Token);
+            }
+            else if (!string.IsNullOrWhiteSpace(catalog.EndpointKey))
+            {
+                if (catalog.ModelType == ModelType.Foundry_Toolkit)
+                    request.Headers.Authorization = new("Bearer", catalog.EndpointKey);
+                else
+                    request.Headers.Add("api-key", catalog.EndpointKey);
+            }
+
+            using var response = await httpClientFactory.CreateClient().SendAsync(request);
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+                return new(false, $"Authentication was rejected with HTTP {(int)response.StatusCode}.");
+
+            return new(true, $"Authenticated endpoint check returned HTTP {(int)response.StatusCode}.");
+        }
+        catch (HttpRequestException ex)
+        {
+            return new(false, $"Endpoint could not be reached: {ex.Message}");
+        }
     }
 
     public async Task DuplicateOwnerCatalogAsync(OwnerCatalog ownerCatalog)
