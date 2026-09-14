@@ -3,6 +3,10 @@ set -euo pipefail
 
 echo Setting up Python environment...
 
+PIP_INDEX_URL="${PIP_INDEX_URL:-https://packagefeedproxy.microsoft.io/pypi/simple/}"
+echo "Configuring pip index to $PIP_INDEX_URL..."
+pip3 config set global.index-url "$PIP_INDEX_URL"
+
 pip3 install -r requirements-dev.txt
 
 echo Setting up commit hooks...
