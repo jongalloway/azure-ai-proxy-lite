@@ -72,6 +72,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<RequestCorrelationMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -90,6 +91,13 @@ app.UseWhen(
 
 // Map Proxy API routes
 app.MapProxyRoutes();
+
+app.MapGet("/healthz", () => Results.Ok(new
+{
+    status = "healthy",
+    service = "AzureAIProxy",
+    routes = new[] { "/api/v1", "/openai/v1" }
+})).AllowAnonymous();
 
 // The default .NET OpenAI client appends /openai/v1 to its configured endpoint.
 // Keep /api/v1 as the canonical proxy base while accepting the root path as an alias.

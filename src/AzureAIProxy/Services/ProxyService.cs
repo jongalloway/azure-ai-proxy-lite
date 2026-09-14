@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Web;
@@ -76,8 +77,14 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
         foreach (var header in requestHeaders)
             requestMessage.Headers.Add(header.Key, header.Value);
 
+        var stopwatch = Stopwatch.StartNew();
         var response = await httpClient.SendAsync(requestMessage);
         var responseContent = await response.Content.ReadAsStringAsync();
+
+        logger.LogInformation(
+            "Upstream POST completed: RequestId={RequestId}, EventId={EventId}, Model={Model}, StatusCode={StatusCode}, DurationMs={DurationMs}",
+            context.Items["RequestId"], requestContext.EventId, deployment.DeploymentName,
+            (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
 
         if ((int)response.StatusCode >= 400)
             logger.LogWarning("Upstream DELETE error: {StatusCode} {Url} Body: {Body}", (int)response.StatusCode, requestUrlWithQuery, responseContent);
@@ -294,6 +301,7 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
         foreach (var header in requestHeaders)
             requestMessage.Headers.Add(header.Key, header.Value);
 
+        var stopwatch = Stopwatch.StartNew();
         using var response = await httpClient.SendAsync(
             requestMessage,
             HttpCompletionOption.ResponseHeadersRead
@@ -303,6 +311,10 @@ public class ProxyService(IHttpClientFactory httpClientFactory, IMetricService m
         context.Response.StatusCode = (int)response.StatusCode;
         context.Response.ContentType = response.Content.Headers.ContentType?.ToString()
             ?? "application/octet-stream";
+        logger.LogInformation(
+            "Upstream stream response: RequestId={RequestId}, EventId={EventId}, Model={Model}, StatusCode={StatusCode}, DurationMs={DurationMs}",
+            context.Items["RequestId"], requestContext.EventId, deployment.DeploymentName,
+            (int)response.StatusCode, stopwatch.ElapsedMilliseconds);
 
         if ((int)response.StatusCode >= 400)
         {

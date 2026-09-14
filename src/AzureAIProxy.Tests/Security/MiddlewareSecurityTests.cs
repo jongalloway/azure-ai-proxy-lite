@@ -2,11 +2,27 @@ using System.Text;
 using AzureAIProxy.Middleware;
 using AzureAIProxy.Tests.TestDoubles;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AzureAIProxy.Tests.Security;
 
 public class MiddlewareSecurityTests
 {
+    [Fact]
+    public async Task RequestCorrelation_UsesCallerRequestIdAndReturnsIt()
+    {
+        var middleware = new RequestCorrelationMiddleware(
+            _ => Task.CompletedTask,
+            NullLogger<RequestCorrelationMiddleware>.Instance);
+        var context = new DefaultHttpContext();
+        context.Request.Headers["X-Request-ID"] = "request-123";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal("request-123", context.Items["RequestId"]);
+        Assert.Equal("request-123", context.Response.Headers["X-Request-ID"]);
+    }
+
     [Fact]
     public async Task LoadProperties_InvalidJson_ReturnsBadRequest_AndSkipsNext()
     {
